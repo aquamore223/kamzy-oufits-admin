@@ -1,43 +1,61 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8" />
   <title>Kamzy Outfits Admin</title>
-  <link rel="stylesheet" href="admin.css">
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="stylesheet" href="./admin.css" />
 </head>
 <body>
   <header>
-    <h1>👗 Kamzy Outfits - Admin Panel</h1>
+    <h1>👗 Kamzy Outfits Admin</h1>
   </header>
 
-  <main>
-    <!-- Product Upload Form -->
-    <section class="form-section">
-      <h2>➕ Add New Product</h2>
-      <form id="productForm">
-        <input type="text" id="name" placeholder="Product Name" required>
-        <input type="number" id="price" placeholder="Price" required>
-        <select id="category" required>
-          <option value="">-- Select Category --</option>
-          <option value="tops">Tops</option>
-          <option value="jeans">Jeans</option>
-          <option value="leggings">Leggings</option>
-          <option value="gowns">Gowns</option>
-        </select>
-        <input type="file" id="image" accept="image/*" required>
-        <button type="submit">Upload Product</button>
-      </form>
-    </section>
+  <!-- Status message (no popups) -->
+  <div id="message" class="message" aria-live="polite"></div>
 
-    <!-- Products Display -->
-    <section class="products-section">
-      <h2>📦 All Products</h2>
-      <div id="productsContainer" class="products-container"></div>
-    </section>
-  </main>
+  <!-- Upload Panel -->
+  <section class="card">
+    <h2>Upload Products</h2>
 
-  <script type="module" src="firebase-config.js"></script>
-  <script type="module" src="admin.js"></script>
+    <div class="row">
+      <label for="categorySelect">Category</label>
+      <select id="categorySelect" required>
+        <option value="">-- Select Category --</option>
+        <option value="tops">Tops</option>
+        <option value="jeans">Jeans</option>
+        <option value="leggings">Leggings</option>
+        <option value="gowns">Gowns</option>
+      </select>
+    </div>
+
+    <div class="actions">
+      <button id="addMoreBtn" class="btn">➕ Add Product</button>
+      <button id="uploadAllBtn" class="btn primary">⬆ Upload All</button>
+    </div>
+
+    <!-- Dynamic product rows + previews -->
+    <div id="productRows" class="product-rows"></div>
+  </section>
+
+  <!-- View existing products by category -->
+  <section class="card">
+    <h2>Products by Category</h2>
+
+    <h3>Tops</h3>
+    <div id="tops-list" class="grid"></div>
+
+    <h3>Jeans</h3>
+    <div id="jeans-list" class="grid"></div>
+
+    <h3>Leggings</h3>
+    <div id="leggings-list" class="grid"></div>
+
+    <h3>Gowns</h3>
+    <div id="gowns-list" class="grid"></div>
+  </section>
+
+  <!-- Only admin.js is included; it imports firebase-config.js as a module -->
+  <script type="module" src="./admin.js"></script>
 </body>
 </html>
