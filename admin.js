@@ -5,10 +5,13 @@ import {
   getDocs,
   query,
   orderBy,
-  serverTimestamp
+  serverTimestamp,
+  updateDoc,
+  deleteDoc,
+  doc
 } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-firestore.js";
 
-// ===== Cloudinary (your existing cloud & preset) =====
+// ===== Cloudinary =====
 const CLOUD_NAME = "dmltit7tl";
 const UPLOAD_PRESET = "kamzy_outfits_unsigned";
 
@@ -19,21 +22,20 @@ const addMoreBtn = document.getElementById("addMoreBtn");
 const uploadAllBtn = document.getElementById("uploadAllBtn");
 const productRows = document.getElementById("productRows");
 
-// Product lists for viewing
 const topsList = document.getElementById("tops-list");
 const jeansList = document.getElementById("jeans-list");
 const leggingsList = document.getElementById("leggings-list");
 const gownsList = document.getElementById("gowns-list");
 
-// Firestore collection reference (✅ correct usage)
 const productsRef = collection(db, "products");
 
 // ===== Helpers =====
 function setMessage(text, type = "success") {
   message.textContent = text;
   message.className = `message show ${type}`;
-  // auto hide after a while (no popups)
-  setTimeout(() => { message.className = "message"; }, 3500);
+  setTimeout(() => {
+    message.className = "message";
+  }, 3500);
 }
 
 function createRow() {
@@ -53,15 +55,13 @@ function createRow() {
   const removeBtn = row.querySelector(".remove");
   const fileEl = row.querySelector(".file");
 
-  // Click preview to choose file
   previewEl.addEventListener("click", () => fileEl.click());
 
-  // When file chosen, show mini preview + live name/price
   const updatePreview = (blobUrl = null) => {
     const n = nameEl.value || "—";
     const p = priceEl.value ? `₦${Number(priceEl.value)}` : "—";
     const img = blobUrl ? `<img src="${blobUrl}" alt="preview" />` : "";
-    previewEl.innerHTML = `${img}<div><div><strong>${n}</strong></div><div>${p}</div></div>`;
+    previewEl.innerHTML = `${img}<div><strong>${n}</strong><div>${p}</div></div>`;
   };
 
   fileEl.addEventListener("change", (e) => {
@@ -74,12 +74,11 @@ function createRow() {
 
   removeBtn.addEventListener("click", () => row.remove());
 
-  // Initialize
   updatePreview();
   return row;
 }
 
-// First row on load
+// First row
 productRows.appendChild(createRow());
 
 // Add more rows
@@ -87,19 +86,13 @@ addMoreBtn.addEventListener("click", () => {
   productRows.appendChild(createRow());
 });
 
-// Upload all rows
+// Upload all
 uploadAllBtn.addEventListener("click", async () => {
   const category = categorySelect.value;
-  if (!category) {
-    setMessage("Please select a category first.", "error");
-    return;
-  }
+  if (!category) return setMessage("Please select a category.", "error");
 
   const rows = [...document.querySelectorAll(".product-row")];
-  if (rows.length === 0) {
-    setMessage("Add at least one product row.", "error");
-    return;
-  }
+  if (rows.length === 0) return setMessage("Add at least one product.", "error");
 
   setMessage("Uploading… please wait.");
 
@@ -109,9 +102,9 @@ uploadAllBtn.addEventListener("click", async () => {
       const price = parseFloat(row.querySelector(".price").value);
       const file = row.querySelector(".file").files[0];
 
-      if (!name || !price || !file) continue; // skip incomplete rows
+      if (!name || !price || !file) continue;
 
-      // 1) Upload image to Cloudinary
+      // upload to Cloudinary
       const fd = new FormData();
       fd.append("file", file);
       fd.append("upload_preset", UPLOAD_PRESET);
@@ -123,7 +116,6 @@ uploadAllBtn.addEventListener("click", async () => {
       const data = await res.json();
       if (!data.secure_url) throw new Error("Cloudinary upload failed");
 
-      // 2) Save product to Firestore
       await addDoc(productsRef, {
         name,
         price,
@@ -133,46 +125,113 @@ uploadAllBtn.addEventListener("click", async () => {
       });
     }
 
-    setMessage("✅ All products uploaded successfully!", "success");
-    // reset UI
+    setMessage("✅ All products uploaded successfully!");
     productRows.innerHTML = "";
     productRows.appendChild(createRow());
     await loadProducts();
 
   } catch (err) {
     console.error(err);
-    setMessage("❌ Upload failed. Please try again.", "error");
+    setMessage("❌ Upload failed.", "error");
   }
 });
 
-// ===== Load products by category (view) =====
+// ===== Load with Edit + Delete =====
 async function loadProducts() {
-  // Clear existing
   [topsList, jeansList, leggingsList, gownsList].forEach(el => el.innerHTML = "");
 
   let qRef;
   try {
     qRef = query(productsRef, orderBy("createdAt", "desc"));
   } catch {
-    qRef = query(productsRef); // fallback if some docs lack createdAt
+    qRef = query(productsRef);
   }
   const snap = await getDocs(qRef);
 
   snap.forEach(docSnap => {
     const p = docSnap.data();
+    const id = docSnap.id;
     const target = document.getElementById(`${p.category}-list`);
     if (!target) return;
 
     const item = document.createElement("div");
     item.className = "card-item";
     item.innerHTML = `
-      <img src="${p.imageUrl}" alt="${p.name}" />
-      <h4>${p.name}</h4>
-      <p>₦${Number(p.price)}</p>
+      <img src="${p.imageUrl}" alt="${p.name}" class="prod-img"/>
+      <input type="text" value="${p.name}" class="edit-name" disabled />
+      <input type="number" value="${p.price}" class="edit-price" disabled />
+      <input type="file" class="edit-file" hidden />
+      <div class="buttons">
+        <button class="edit-btn">Edit</button>
+        <button class="save-btn" style="display:none;">Save</button>
+        <button class="delete-btn">Delete</button>
+      </div>
     `;
+
+    const editBtn = item.querySelector(".edit-btn");
+    const saveBtn = item.querySelector(".save-btn");
+    const deleteBtn = item.querySelector(".delete-btn");
+    const nameInput = item.querySelector(".edit-name");
+    const priceInput = item.querySelector(".edit-price");
+    const fileInput = item.querySelector(".edit-file");
+    const imgEl = item.querySelector(".prod-img");
+
+    // Edit mode
+    editBtn.addEventListener("click", () => {
+      nameInput.disabled = false;
+      priceInput.disabled = false;
+      fileInput.hidden = false;
+      editBtn.style.display = "none";
+      saveBtn.style.display = "inline-block";
+    });
+
+    // Save changes
+    saveBtn.addEventListener("click", async () => {
+      try {
+        let newUrl = p.imageUrl;
+        if (fileInput.files[0]) {
+          const fd = new FormData();
+          fd.append("file", fileInput.files[0]);
+          fd.append("upload_preset", UPLOAD_PRESET);
+
+          const res = await fetch(`https://api.cloudinary.com/v1_1/${CLOUD_NAME}/image/upload`, {
+            method: "POST",
+            body: fd
+          });
+          const data = await res.json();
+          newUrl = data.secure_url;
+        }
+
+        await updateDoc(doc(db, "products", id), {
+          name: nameInput.value,
+          price: parseFloat(priceInput.value),
+          imageUrl: newUrl
+        });
+
+        setMessage("✅ Product updated!");
+        loadProducts();
+      } catch (err) {
+        console.error(err);
+        setMessage("❌ Update failed", "error");
+      }
+    });
+
+    // Delete
+    deleteBtn.addEventListener("click", async () => {
+      if (confirm("Delete this product?")) {
+        try {
+          await deleteDoc(doc(db, "products", id));
+          setMessage("🗑️ Product deleted!");
+          loadProducts();
+        } catch (err) {
+          console.error(err);
+          setMessage("❌ Delete failed", "error");
+        }
+      }
+    });
+
     target.appendChild(item);
   });
 }
 
-// Initial load
 loadProducts();

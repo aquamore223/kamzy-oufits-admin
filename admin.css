@@ -8,6 +8,8 @@
   --border:#e5e7eb;
   --success:#16a34a;
   --error:#dc2626;
+  --warning:#f59e0b;
+  --info:#0ea5e9;
 }
 
 *{box-sizing:border-box}
@@ -52,9 +54,25 @@ select,input[type="text"],input[type="number"],input[type="file"]{
   border:none; cursor:pointer;
   background:#e5e7eb; color:#111827;
   padding:10px 14px; border-radius:10px; font-weight:600;
+  transition:background 0.2s;
 }
+.btn:hover{background:#d1d5db}
+
 .btn.primary{background:var(--primary); color:#fff}
 .btn.primary:hover{background:var(--primary-600)}
+
+/* New button variants */
+.btn.success{background:var(--success); color:#fff}
+.btn.success:hover{background:#15803d}
+
+.btn.error{background:var(--error); color:#fff}
+.btn.error:hover{background:#b91c1c}
+
+.btn.warning{background:var(--warning); color:#fff}
+.btn.warning:hover{background:#d97706}
+
+.btn.info{background:var(--info); color:#fff}
+.btn.info:hover{background:#0284c7}
 
 .message{
   margin-bottom:18px;
@@ -88,9 +106,10 @@ select,input[type="text"],input[type="number"],input[type="file"]{
   width:72px; height:72px; object-fit:cover; border-radius:10px; border:1px solid var(--border);
 }
 .product-row .remove{
-  background:#f3f4f6; color:#111; border:none; padding:8px 10px; border-radius:10px; cursor:pointer;
+  background:var(--error); color:#fff;
+  border:none; padding:8px 10px; border-radius:10px; cursor:pointer;
 }
-.product-row .remove:hover{background:#e5e7eb}
+.product-row .remove:hover{background:#b91c1c}
 
 @media (max-width: 720px){
   .product-row{
