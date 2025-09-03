@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Kamzy Outfits - Orders Admin</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="stylesheet" href="./admin.css" />
+  <link href='https://cdn.boxicons.com/fonts/basic/boxicons.min.css' rel='stylesheet'>
+</head>
+<body>
+  <header>
+    <h1>📦 Kamzy Outfits Orders</h1>
+    <nav style="margin: 20px 0;">
+      <a href="index.html" class="btn">← Back to Products</a>
+    </nav>
+  </header>
+
+  <!-- Status message -->
+  <div id="message" class="message" aria-live="polite"></div>
+
+  <!-- Orders List -->
+  <section class="card">
+    <h2>Recent Orders</h2>
+    <div class="actions">
+      <button id="refreshOrders" class="btn">🔄 Refresh</button>
+      <button id="markAllProcessed" class="btn success">✓ Mark All as Processed</button>
+    </div>
+    
+    <div id="ordersList" class="orders-list">
+      <p>Loading orders...</p>
+    </div>
+  </section>
+
+  <script type="module" src="./admin-orders.js"></script>
+</body>
+</html>
